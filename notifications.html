@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notifications – Ripple</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .notif-list { max-width: 720px; margin: 0 auto; }
+
+    .notif-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      border-radius: var(--radius);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+      transition: background 0.2s, transform 0.15s;
+      cursor: pointer;
+    }
+    .notif-item:hover { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
+    .notif-item.unread {
+      border-left: 3px solid var(--neon);
+      background: rgba(241,255,94,0.06);
+    }
+
+    .notif-icon {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .notif-icon.reply  { background: rgba(58,154,255,0.2); color: var(--sky); }
+    .notif-icon.like   { background: rgba(255,80,110,0.2); color: #ff506e; }
+    .notif-icon.mention { background: rgba(241,255,94,0.15); color: var(--neon); }
+
+    .notif-body { flex: 1; min-width: 0; }
+    .notif-msg  { font-size: 0.95rem; color: var(--text-light); margin-bottom: 4px; }
+    .notif-time { font-size: 0.78rem; color: var(--text-muted); }
+    .notif-dot  {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--neon); flex-shrink: 0; margin-top: 6px;
+    }
+
+    .notif-page-header {
+      max-width: 720px; margin: 0 auto 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .notif-page-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.6rem; font-weight: 700; color: #fff;
+    }
+    .notif-empty {
+      text-align: center; padding: 60px 20px; color: var(--text-muted);
+    }
+    .notif-empty i { font-size: 3.5rem; display: block; margin-bottom: 16px; opacity: 0.4; }
+
+    .dash-layout { display: flex; gap: 0; min-height: calc(100vh - 70px); padding-top: 70px; }
+    .dash-main { flex: 1; padding: 32px 24px; max-width: 100%; }
+
+    .back-btn {
+      color: var(--text-muted); font-size: 0.9rem; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-bottom: 8px; transition: color 0.2s;
+    }
+    .back-btn:hover { color: var(--neon); }
+
+    .mark-all-btn {
+      font-size: 0.85rem; color: var(--sky); background: none;
+      border: none; cursor: pointer; padding: 6px 12px;
+      border-radius: 8px; transition: background 0.2s;
+    }
+    .mark-all-btn:hover { background: rgba(58,154,255,0.1); }
+
+    .unread-badge {
+      background: var(--neon); color: #1C0770;
+      font-size: 0.72rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px; margin-left: 10px;
+    }
+
+    .notif-loader {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; padding: 40px; color: var(--text-muted);
+    }
+    .loader-spinner {
+      width: 22px; height: 22px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--neon);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="dash-body">
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg ripple-navbar fixed-top">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="index.html">
+        <span class="logo-text">ripple<span class="logo-dot">.</span></span>
+      </a>
+      <div class="d-flex align-items-center gap-3 ms-auto">
+        <div class="notification-bell" onclick="window.location.href='notifications.html'" style="cursor:pointer">
+          <i class="bi bi-bell-fill"></i>
+          <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+        </div>
+        <div class="user-pill" id="userPill">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span id="userDisplayName">Loading...</span>
+        </div>
+        <button class="btn btn-sm btn-outline-light" onclick="logout()">
+          <i class="bi bi-box-arrow-right"></i> Logout
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dash-layout">
+    <main class="dash-main">
+
+      <a href="dashboard.html" class="back-btn">
+        <i class="bi bi-arrow-left"></i> Back to Feed
+      </a>
+
+      <div class="notif-page-header">
+        <div class="notif-page-title">
+          <i class="bi bi-bell-fill me-2" style="color:var(--neon)"></i>
+          Notifications
+          <span class="unread-badge" id="unreadBadgeLabel" style="display:none"></span>
+        </div>
+        <button class="mark-all-btn" id="markAllBtn" onclick="markAllRead()" style="display:none">
+          <i class="bi bi-check2-all me-1"></i> Mark all read
+        </button>
+      </div>
+
+      <!-- Loader -->
+      <div class="notif-loader" id="notifLoader">
+        <div class="loader-spinner"></div>
+        <span>Loading notifications...</span>
+      </div>
+
+      <!-- Empty state -->
+      <div class="notif-empty d-none" id="notifEmpty">
+        <i class="bi bi-bell-slash"></i>
+        <p>You're all caught up! No notifications yet.</p>
+        <a href="dashboard.html" class="btn btn-neon mt-2">Go to Feed</a>
+      </div>
+
+      <!-- List -->
+      <div class="notif-list" id="notifList"></div>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    let currentUser = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      currentUser = requireAuth();
+      if (!currentUser) return;
+
+      document.getElementById('userDisplayName').textContent = currentUser.name;
+      document.getElementById('userAvatar').textContent      = getInitials(currentUser.name);
+
+      loadNotifications();
+    });
+
+    async function loadNotifications() {
+      const loader = document.getElementById('notifLoader');
+      const list   = document.getElementById('notifList');
+      const empty  = document.getElementById('notifEmpty');
+
+      loader.style.display = 'flex';
+      list.innerHTML = '';
+      empty.classList.add('d-none');
+
+      try {
+        const res  = await fetch(`api/fetch_notifications.php?user_id=${currentUser.id}`);
+        const data = await res.json();
+        loader.style.display = 'none';
+
+        if (!data.success) {
+          list.innerHTML = `<p class="text-center" style="color:var(--text-muted)">Could not load notifications.</p>`;
+          return;
+        }
+
+        const notifs      = data.notifications;
+        const unreadCount = data.unread_count;
+
+        // Update bell badge
+        const badge = document.getElementById('notifBadge');
+        if (unreadCount > 0) {
+          badge.textContent    = unreadCount > 99 ? '99+' : unreadCount;
+          badge.style.display  = 'block';
+          document.getElementById('unreadBadgeLabel').textContent = unreadCount + ' new';
+          document.getElementById('unreadBadgeLabel').style.display = 'inline';
+          document.getElementById('markAllBtn').style.display = 'inline-flex';
+        }
+
+        if (notifs.length === 0) {
+          empty.classList.remove('d-none');
+          return;
+        }
+
+        notifs.forEach(n => {
+          const item = document.createElement('div');
+          item.className = 'notif-item' + (n.is_read ? '' : ' unread');
+          item.dataset.id = n.id;
+
+          const iconClass = n.type === 'like' ? 'like' : n.type === 'mention' ? 'mention' : 'reply';
+          const iconName  = n.type === 'like' ? 'bi-heart-fill' : n.type === 'mention' ? 'bi-at' : 'bi-reply-fill';
+
+          item.innerHTML = `
+            <div class="notif-icon ${iconClass}"><i class="bi ${iconName}"></i></div>
+            <div class="notif-body">
+              <div class="notif-msg">${escapeHtml(n.message)}</div>
+              <div class="notif-time">${timeAgo(n.created_at)}</div>
+            </div>
+            ${!n.is_read ? '<div class="notif-dot"></div>' : ''}
+          `;
+
+          // Clicking notification marks it read and goes to dashboard
+          item.addEventListener('click', () => markOneRead(n.id, item));
+
+          list.appendChild(item);
+        });
+
+      } catch (err) {
+        loader.style.display = 'none';
+        list.innerHTML = `<p class="text-center" style="color:var(--text-muted)">
+          <i class="bi bi-wifi-off d-block mb-2" style="font-size:2rem"></i>
+          Cannot reach server. Make sure XAMPP is running.
+        </p>`;
+      }
+    }
+
+    async function markOneRead(notifId, item) {
+      await fetch('api/mark_notifications_read.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUser.id, notif_id: notifId })
+      });
+      item.classList.remove('unread');
+      const dot = item.querySelector('.notif-dot');
+      if (dot) dot.remove();
+      // Navigate to dashboard
+      window.location.href = 'dashboard.html';
+    }
+
+    async function markAllRead() {
+      await fetch('api/mark_notifications_read.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUser.id })
+      });
+      document.querySelectorAll('.notif-item.unread').forEach(el => {
+        el.classList.remove('unread');
+        const dot = el.querySelector('.notif-dot');
+        if (dot) dot.remove();
+      });
+      document.getElementById('notifBadge').style.display      = 'none';
+      document.getElementById('unreadBadgeLabel').style.display = 'none';
+      document.getElementById('markAllBtn').style.display       = 'none';
+    }
+
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+  </script>
+</body>
+</html>

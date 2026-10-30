@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register – Ripple</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body class="auth-body">
+
+  <div class="auth-bg-orb orb1"></div>
+  <div class="auth-bg-orb orb2"></div>
+
+  <nav class="navbar ripple-navbar">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">
+        <span class="logo-text">ripple<span class="logo-dot">.</span></span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="auth-wrapper">
+    <div class="auth-card glass-card">
+      <div class="auth-header text-center mb-4">
+        <div class="auth-icon"><i class="bi bi-person-plus-fill"></i></div>
+        <h2 class="auth-title">Join Ripple</h2>
+        <p class="auth-subtitle">Create your campus account</p>
+      </div>
+
+      <div id="registerAlert"></div>
+
+      <form id="registerForm" novalidate>
+        <div class="mb-3">
+          <label class="form-label auth-label">Full Name</label>
+          <div class="input-group-custom">
+            <i class="bi bi-person-fill input-icon"></i>
+            <input type="text" class="form-control auth-input" id="regName" placeholder="Your full name" required/>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label auth-label">Email Address</label>
+          <div class="input-group-custom">
+            <i class="bi bi-envelope-fill input-icon"></i>
+            <input type="email" class="form-control auth-input" id="regEmail" placeholder="you@campus.edu" required/>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label auth-label">Password</label>
+          <div class="input-group-custom">
+            <i class="bi bi-lock-fill input-icon"></i>
+            <input type="password" class="form-control auth-input" id="regPassword" placeholder="Min 6 characters" required/>
+            <button type="button" class="toggle-password" onclick="togglePassword('regPassword', this)">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label auth-label">Role</label>
+          <div class="input-group-custom">
+            <i class="bi bi-person-badge-fill input-icon"></i>
+            <select class="form-control auth-input" id="regRole" required>
+              <option value="">Select your role</option>
+              <option value="student">🎓 Student</option>
+              <option value="faculty">👨‍🏫 Faculty</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-neon w-100 btn-lg" id="regBtn">
+          <span id="regBtnText">Create Account</span>
+          <span id="regSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
+        </button>
+      </form>
+
+      <p class="text-center mt-4 auth-footer-text">
+        Already have an account? <a href="login.html" class="auth-link">Sign in here</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const name     = document.getElementById('regName').value.trim();
+      const email    = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value.trim();
+      const role     = document.getElementById('regRole').value;
+      const alertBox = document.getElementById('registerAlert');
+      const btn      = document.getElementById('regBtn');
+      const spinner  = document.getElementById('regSpinner');
+      const btnText  = document.getElementById('regBtnText');
+
+      // Validate
+      if (!name || !email || !password || !role) {
+        showAlert(alertBox, 'danger', 'Please fill in all fields.');
+        return;
+      }
+      if (password.length < 6) {
+        showAlert(alertBox, 'danger', 'Password must be at least 6 characters.');
+        return;
+      }
+
+      // Loading state
+      btn.disabled = true;
+      spinner.classList.remove('d-none');
+      btnText.textContent = 'Creating account...';
+
+      try {
+        const response = await fetch('api/register.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, role })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert(alertBox, 'success', '✅ Account created! Redirecting to login...');
+          setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+        } else {
+          showAlert(alertBox, 'danger', data.message || 'Registration failed. Try again.');
+          btn.disabled = false;
+          spinner.classList.add('d-none');
+          btnText.textContent = 'Create Account';
+        }
+      } catch (err) {
+        showAlert(alertBox, 'danger', '❌ Server error. Make sure XAMPP is running.');
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+        btnText.textContent = 'Create Account';
+      }
+    });
+
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon  = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+      }
+    }
+  </script>
+</body>
+</html>

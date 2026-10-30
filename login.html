@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login – Ripple</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body class="auth-body">
+
+  <div class="auth-bg-orb orb1"></div>
+  <div class="auth-bg-orb orb2"></div>
+
+  <nav class="navbar ripple-navbar">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">
+        <span class="logo-text">ripple<span class="logo-dot">.</span></span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="auth-wrapper">
+    <div class="auth-card glass-card">
+      <div class="auth-header text-center mb-4">
+        <div class="auth-icon"><i class="bi bi-door-open-fill"></i></div>
+        <h2 class="auth-title">Welcome Back</h2>
+        <p class="auth-subtitle">Sign in to your Ripple account</p>
+      </div>
+
+      <!-- Alert container -->
+      <div id="loginAlert"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="mb-3">
+          <label class="form-label auth-label">Email Address</label>
+          <div class="input-group-custom">
+            <i class="bi bi-envelope-fill input-icon"></i>
+            <input type="email" class="form-control auth-input" id="loginEmail" placeholder="you@campus.edu" required/>
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label auth-label">Password</label>
+          <div class="input-group-custom">
+            <i class="bi bi-lock-fill input-icon"></i>
+            <input type="password" class="form-control auth-input" id="loginPassword" placeholder="Enter your password" required/>
+            <button type="button" class="toggle-password" onclick="togglePassword('loginPassword', this)">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-neon w-100 btn-lg" id="loginBtn">
+          <span id="loginBtnText">Sign In</span>
+          <span id="loginSpinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
+        </button>
+      </form>
+
+      <p class="text-center mt-4 auth-footer-text">
+        Don't have an account? <a href="register.html" class="auth-link">Register here</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // Login form handler
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const email    = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const alertBox = document.getElementById('loginAlert');
+      const btn      = document.getElementById('loginBtn');
+      const spinner  = document.getElementById('loginSpinner');
+      const btnText  = document.getElementById('loginBtnText');
+
+      // Basic validation
+      if (!email || !password) {
+        showAlert(alertBox, 'danger', 'Please fill in all fields.');
+        return;
+      }
+
+      // Show loading
+      btn.disabled = true;
+      spinner.classList.remove('d-none');
+      btnText.textContent = 'Signing in...';
+
+      try {
+        const response = await fetch('api/login.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Save user info to sessionStorage
+          sessionStorage.setItem('ripple_user', JSON.stringify(data.user));
+          showAlert(alertBox, 'success', '✅ Login successful! Redirecting...');
+          setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+        } else {
+          showAlert(alertBox, 'danger', data.message || 'Invalid credentials. Please try again.');
+          btn.disabled = false;
+          spinner.classList.add('d-none');
+          btnText.textContent = 'Sign In';
+        }
+      } catch (err) {
+        showAlert(alertBox, 'danger', '❌ Server error. Make sure XAMPP is running.');
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+        btnText.textContent = 'Sign In';
+      }
+    });
+
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon  = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+      }
+    }
+  </script>
+</body>
+</html>
